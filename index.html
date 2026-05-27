@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>PexJet — Empty Leg Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root{--black:#0a0a0a;--black2:#111111;--black3:#1a1a1a;--black4:#222222;--gold:#C8A84B;--gold-lt:#E8D48A;--gold-dim:rgba(200,168,75,.12)}
+[data-theme="dark"]{--bg:#0a0a0a;--bg2:#111111;--bg3:#1a1a1a;--bdr:#2a2a2a;--txt:#ede5d4;--muted:#7a6e5e;--inp:#0a0a0a;--inp-b:#2e2a22}
+[data-theme="light"]{--bg:#f0ece4;--bg2:#ffffff;--bg3:#e8e4dc;--bdr:#d8d0c0;--txt:#0a0a0a;--muted:#7a6e5e;--inp:#faf8f4;--inp-b:#ccc4b4}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;overflow:hidden;transition:background .3s,color .3s}
+.shell{display:flex;flex-direction:column;height:100vh}
+.topbar{background:var(--black);height:52px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gold);flex-shrink:0;z-index:200}
+.tb-brand{display:flex;align-items:center;gap:12px}
+.tb-logo{height:26px;width:auto;display:block}
+.tb-sub{font-size:8.5px;font-weight:600;letter-spacing:2.5px;color:var(--gold);text-transform:uppercase;margin-top:2px}
+.tgl{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.tgl-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.4)}
+.tgl-track{width:40px;height:21px;background:rgba(255,255,255,.05);border:1px solid rgba(200,168,75,.35);border-radius:11px;position:relative}
+.tgl-thumb{width:15px;height:15px;background:var(--gold);border-radius:50%;position:absolute;top:2px;left:2px;transition:transform .28s cubic-bezier(.4,0,.2,1);box-shadow:0 1px 4px rgba(0,0,0,.4)}
+[data-theme="light"] .tgl-thumb{transform:translateX(19px)}
+.mob-tabs{display:none;background:var(--black2);border-bottom:1px solid var(--bdr);flex-shrink:0}
+.mtab{padding:9px 16px;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:color .2s,border-color .2s}
+.mtab.on{color:var(--gold);border-bottom-color:var(--gold)}
+.grid{display:grid;grid-template-columns:340px 1fr;flex:1;overflow:hidden}
+.fp{background:var(--bg2);border-right:1px solid var(--bdr);overflow-y:auto;padding:18px;scrollbar-width:thin;scrollbar-color:var(--bdr) transparent}
+.fp::-webkit-scrollbar{width:4px}
+.fp::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:4px}
+.fsec{font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-top:20px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.fsec:first-child{margin-top:0}
+.badge{background:var(--gold-dim);color:var(--gold);font-size:8px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid rgba(200,168,75,.2)}
+.fg{margin-bottom:10px}
+label{display:block;font-size:9px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+input[type=text],input[type=date],input[type=time],input[type=number],select,textarea{width:100%;background:var(--inp);border:1px solid var(--inp-b);border-radius:6px;padding:7px 10px;font-family:"DM Sans",sans-serif;font-size:12.5px;color:var(--txt);outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%23997744' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:26px;cursor:pointer}
+textarea{resize:vertical;min-height:52px;line-height:1.45}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-dim)}
+input[readonly]{opacity:.4;cursor:default}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.leg-stack{display:flex;flex-direction:column;gap:10px}
+.lc{background:var(--bg3);border:1px solid var(--bdr);border-radius:9px;padding:13px;position:relative;transition:border-color .2s}
+.lc:hover{border-color:rgba(200,168,75,.3)}
+.lc-n{font-family:"Bebas Neue",sans-serif;font-size:20px;color:var(--gold);line-height:1;margin-bottom:9px}
+.rm-btn{position:absolute;top:9px;right:9px;width:21px;height:21px;background:none;border:1px solid var(--bdr);border-radius:50%;cursor:pointer;font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:border-color .2s,color .2s}
+.rm-btn:hover{border-color:#c0392b;color:#c0392b}
+.add-leg-btn{width:100%;margin-top:9px;padding:8.5px;background:transparent;border:1px dashed rgba(200,168,75,.4);border-radius:7px;font-family:"DM Sans",sans-serif;font-size:11.5px;font-weight:600;color:var(--gold);cursor:pointer;transition:background .2s,border-color .2s}
+.add-leg-btn:hover:not(:disabled){background:var(--gold-dim);border-color:var(--gold)}
+.add-leg-btn:disabled{opacity:.28;cursor:not-allowed}
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bdr)}
+.tog-row:last-child{border-bottom:none}
+.tog-lbl{font-size:11px;font-weight:500;color:var(--txt)}
+.tog{width:34px;height:18px;background:var(--bdr);border:none;border-radius:9px;position:relative;cursor:pointer;transition:background .25s;flex-shrink:0}
+.tog.on{background:var(--gold)}
+.tog::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .25s}
+.tog.on::after{transform:translateX(16px)}
+.action-bar{margin-top:18px;display:flex;flex-direction:column;gap:7px}
+.act-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.btn-g{padding:11px 8px;background:var(--gold);color:var(--black);border:none;border-radius:7px;font-family:"DM Sans",sans-serif;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background .2s,transform .15s;white-space:nowrap}
+.btn-g:hover{background:var(--gold-lt);transform:translateY(-1px)}
+.btn-dk{padding:11px 8px;background:var(--black3);color:var(--gold);border:1px solid rgba(200,168,75,.3);border-radius:7px;font-family:"DM Sans",sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:background .2s,border-color .2s;white-space:nowrap}
+.btn-dk:hover{background:var(--black4);border-color:var(--gold)}
+.btn-wa{padding:9px;background:rgba(37,211,102,.07);border:1px solid rgba(37,211,102,.3);border-radius:7px;font-family:"DM Sans",sans-serif;font-size:11px;font-weight:700;color:#25D366;cursor:pointer;transition:background .2s}
+.btn-wa:hover{background:rgba(37,211,102,.14)}
+.btn-rst{padding:9px;background:transparent;border:1px solid var(--bdr);border-radius:7px;font-family:"DM Sans",sans-serif;font-size:10.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:border-color .2s,color .2s}
+.btn-rst:hover{border-color:var(--muted);color:var(--txt)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.overlay.show{display:flex}
+.ov-spin{width:36px;height:36px;border:3px solid rgba(200,168,75,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ov-txt{font-size:12px;font-weight:600;color:var(--gold);letter-spacing:1px;text-transform:uppercase}
+.pp{background:var(--bg);overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:26px 20px 48px;scrollbar-width:thin;scrollbar-color:var(--bdr) transparent}
+.pp::-webkit-scrollbar{width:4px}
+.pp::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:4px}
+.prev-label{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;align-self:flex-start}
+#flyerDoc{width:595px;background:#ffffff;color:#111;font-family:"DM Sans",sans-serif;box-shadow:0 4px 28px rgba(0,0,0,.2),0 1px 6px rgba(0,0,0,.1);flex-shrink:0;overflow:hidden;border-top:4px solid #C8A84B;position:relative}
+.fd-watermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;user-select:none;z-index:0;overflow:hidden}
+.fd-wm-x{font-family:"Bebas Neue",sans-serif;font-size:440px;color:#C8A84B;opacity:.052;line-height:1;transform:scaleX(1.2);letter-spacing:-8px}
+.fd-z{position:relative;z-index:1}
+.dh{padding:16px 22px 14px;border-bottom:1px solid #e8e2d4;background:#fff}
+.dh-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.dh-title{font-size:24px;font-weight:800;color:#111;line-height:1.1}
+.dh-logo{height:40px;width:auto;display:block;flex-shrink:0;margin-top:2px}
+.dh-meta{display:flex;flex-wrap:wrap;gap:0 22px;font-size:10.5px;color:#555;line-height:1.7}
+.dh-ml{color:#aaa;font-weight:400}
+.dh-mv{color:#333;font-weight:600}
+.dsect{text-align:center;padding:11px 0 5px;font-family:"Cormorant Garamond",serif;font-size:15px;font-weight:600;color:#555;letter-spacing:.2px}
+.dtbl-wrap{padding:0 14px 10px}
+.dtbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.dtbl th{padding:6px 10px;text-align:left;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#999;border-bottom:1.5px solid #e8e2d4;background:#faf8f3}
+.dtbl td{padding:8px 10px;border-bottom:1px solid #f2ede4;vertical-align:middle;color:#333}
+.dtbl tr:last-child td{border-bottom:none}
+.dtbl tr:nth-child(even) td{background:#faf8f3}
+.dtbl .tb{font-size:13px;font-weight:700;color:#111}
+.dtbl .tg{font-weight:700;color:#C8A84B}
+.d-fare-mid{text-align:center;padding:13px 22px 11px;border-bottom:1px solid #e8e2d4;background:#fff}
+.d-fare-mid-tag{font-size:8.5px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#C8A84B;margin-bottom:4px}
+.d-fare-mid-val{font-family:"Cormorant Garamond",serif;font-size:30px;font-weight:700;color:#111;letter-spacing:-.3px}
+.d-fare-mid-sub{font-size:9px;color:#aaa;margin-top:3px}
+.d-photos{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 14px;background:#f8f5ef;border-top:1px solid #e8e2d4;border-bottom:1px solid #e8e2d4}
+.d-photo{height:132px;border-radius:5px;overflow:hidden;background:#e4e0d8;position:relative}
+.d-ph-img{width:100%;height:100%;object-fit:cover;display:none;position:relative;z-index:1}
+.d-ph-img.loaded{display:block}
+.d-ph-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#bbb;font-size:9px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;z-index:0}
+.d-ph-ph .ic{font-size:22px;opacity:.35}
+.d-ph-lbl{position:absolute;bottom:0;left:0;right:0;padding:4px 8px;background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.52));font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.85);z-index:2}
+.d-amen{padding:9px 14px 11px;display:flex;flex-wrap:wrap;gap:5px 16px;background:#fff;border-bottom:1px solid #e8e2d4}
+.d-am{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#444}
+.d-am-chk{color:#C8A84B;font-size:12px;font-weight:800;flex-shrink:0}
+.d-foot{padding:12px 22px;display:flex;align-items:center;justify-content:center;background:#fff;border-bottom:1px solid #e8e2d4}
+.d-foot-txt{font-size:10px;color:#888;line-height:1.7;text-align:center}
+.d-foot-txt strong{color:#333;font-weight:700}
+.d-bar{background:#0a0a0a;padding:7px 22px;display:flex;align-items:center;justify-content:space-between}
+.d-bar-logo{height:17px;width:auto;display:block}
+.d-bar-r{display:flex;align-items:center;gap:10px}
+.d-bar-txt{font-size:7.5px;font-weight:500;letter-spacing:1.5px;color:rgba(255,255,255,.35);text-transform:uppercase}
+.d-bar-dot{width:2.5px;height:2.5px;background:#C8A84B;border-radius:50%;opacity:.5}
+@media print{
+  @page{size:A4 portrait;margin:0}
+  html,body{overflow:visible!important;height:auto!important;background:#fff!important}
+  .topbar,.mob-tabs,.fp,.prev-label,.overlay{display:none!important}
+  .shell,.grid{display:block!important;height:auto!important}
+  .pp{display:block!important;overflow:visible!important;padding:0!important;background:#fff!important;height:auto!important}
+  #flyerDoc{width:210mm!important;max-width:none!important;box-shadow:none!important;overflow:visible!important;position:static!important}
+  .fd-watermark{overflow:visible!important;position:absolute!important}
+  .dh,.dtbl,.d-photos,.d-amen,.d-foot,.d-bar,.d-fare-mid,.fd-watermark{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media(max-width:820px){
+  body{overflow:auto}
+  .mob-tabs{display:flex}
+  .grid{grid-template-columns:1fr;overflow:visible;height:auto}
+  .fp{max-height:none;overflow:visible;border-right:none;border-bottom:1px solid var(--bdr)}
+  .pp{overflow:visible;padding:16px 8px 36px}
+  #flyerDoc{width:100%;max-width:595px}
+  .panel-hidden{display:none!important}
+  .d-photos{grid-template-columns:1fr}
+  .d-photo{height:160px}
+  .fd-wm-x{font-size:300px}
+}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="ov"><div class="ov-spin"></div><div class="ov-txt">Generating PNG…</div></div>
+
+<div class="shell">
+
+<header class="topbar">
+  <div class="tb-brand">
+    <img class="tb-logo" src="data:image/jpeg;base64,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" alt="PexJet">
+    <div><div class="tb-sub">Empty Leg Generator</div></div>
+  </div>
+  <div class="tgl" onclick="toggleTheme()" role="button" aria-label="Toggle theme">
+    <span class="tgl-lbl" id="thLbl">Dark</span>
+    <div class="tgl-track"><div class="tgl-thumb"></div></div>
+  </div>
+</header>
+
+<div class="mob-tabs">
+  <button class="mtab on" id="tEd" onclick="swTab('form')">&#9998; Edit</button>
+  <button class="mtab" id="tPv" onclick="swTab('prev')">&#128065; Preview</button>
+</div>
+
+<div class="grid">
+
+<div class="fp" id="formPanel">
+
+  <div class="fsec">Contacts</div>
+  <div class="r2">
+    <div class="fg"><label>Email</label><input type="text" id="ctcEmail" value="charter@pexjet.com" oninput="render()"></div>
+    <div class="fg"><label>WhatsApp</label><input type="text" id="ctcWA" value="+234 818 213 089" oninput="render()"></div>
+  </div>
+  <div class="r2">
+    <div class="fg"><label>Website</label><input type="text" id="ctcWeb" value="www.pexjet.com" oninput="render()"></div>
+    <div class="fg"><label>Issue Date</label><input type="date" id="issueDate" oninput="render()"></div>
+  </div>
+
+  <div class="fsec">Aircraft</div>
+  <div class="r2">
+    <div class="fg"><label>Aircraft Type</label>
+      <select id="aircraft" onchange="onAcChange()">
+        <option value="Bombardier Challenger 604">Bombardier Challenger 604</option>
+        <option value="Hawker 800XP">Hawker 800XP</option>
+        <option value="Cessna 208B Caravan">Cessna 208B Caravan</option>
+        <option value="Bombardier Global 6000">Bombardier Global 6000</option>
+        <option value="Gulfstream G550">Gulfstream G550</option>
+        <option value="Embraer Phenom 300">Embraer Phenom 300</option>
+        <option value="Bombardier Challenger 350">Bombardier Challenger 350</option>
+        <option value="Dassault Falcon 7X">Dassault Falcon 7X</option>
+        <option value="Dassault Falcon 900LX">Dassault Falcon 900LX</option>
+        <option value="Gulfstream G650">Gulfstream G650</option>
+        <option value="Bombardier Global 7500">Bombardier Global 7500</option>
+        <option value="Embraer Legacy 600">Embraer Legacy 600</option>
+        <option value="custom">Custom...</option>
+      </select>
+    </div>
+    <div class="fg"><label>Passengers</label><input type="number" id="pax" value="12" min="1" max="100" oninput="render()"></div>
+  </div>
+  <div class="fg" id="custAcGrp" style="display:none"><label>Custom Aircraft Name</label><input type="text" id="custAc" placeholder="e.g. Gulfstream G700" oninput="render()"></div>
+  <div class="r2">
+    <div class="fg"><label>Year of Manufacture</label><input type="text" id="yom" value="2008" oninput="render()"></div>
+    <div class="fg"><label>Range / Class</label>
+      <select id="acRange" onchange="render()">
+        <option>Light jet</option><option>Mid range</option><option>Super mid range</option>
+        <option selected>Long range</option><option>Ultra long range</option><option>Turboprop</option>
+      </select>
+    </div>
+  </div>
+  <div class="fg"><label>Amenities (comma-separated)</label>
+    <textarea id="amenities" oninput="render()">Wi-Fi, Galley, Lavatory, Club seats, Entertainment</textarea>
+  </div>
+
+  <div class="fsec"><span>Empty Legs</span><span class="badge" id="legBadge">1 leg</span></div>
+  <div class="leg-stack" id="legStack"></div>
+  <button class="add-leg-btn" id="addLegBtn" onclick="addLeg()">+ Add Leg</button>
+
+  <div class="fsec">Options</div>
+  <div>
+    <div class="tog-row"><span class="tog-lbl">Show aircraft photos</span><button class="tog on" id="togPhotos" onclick="togOpt(this,'photos')"></button></div>
+    <div class="tog-row"><span class="tog-lbl">Show amenities</span><button class="tog on" id="togAmen" onclick="togOpt(this,'amen')"></button></div>
+    <div class="tog-row"><span class="tog-lbl">Show discounted fare</span><button class="tog" id="togFare" onclick="togOpt(this,'fare')"></button></div>
+  </div>
+  <div class="fg" id="fareGrp" style="display:none;margin-top:10px">
+    <label>Discounted Fare</label>
+    <input type="text" id="fareVal" placeholder="e.g. $2,500 or ₦4,500,000" oninput="render()">
+  </div>
+
+  <div class="action-bar">
+    <div class="act-row">
+      <button class="btn-g" onclick="dlPDF()">⬇ PDF</button>
+      <button class="btn-dk" onclick="dlPNG()">⬇ PNG</button>
+    </div>
+    <button class="btn-wa" onclick="shareWA()">📲  WhatsApp Broadcast</button>
+    <button class="btn-rst" onclick="resetAll()">↺  Reset Defaults</button>
+  </div>
+
+</div>
+
+<div class="pp" id="prevPanel">
+  <div class="prev-label">Live Preview — Empty Leg Offer</div>
+
+  <div id="flyerDoc">
+
+    <!-- GOLD X WATERMARK: Bebas Neue, centred, ~5% opacity, gold -->
+    <div class="fd-watermark" aria-hidden="true"><span class="fd-wm-x">X</span></div>
+
+    <div class="dh fd-z">
+      <div class="dh-top">
+        <div><div class="dh-title">Empty Leg Offer</div></div>
+        <img class="dh-logo" src="data:image/jpeg;base64,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" alt="PexJet">
+      </div>
+      <div class="dh-meta">
+        <div><span class="dh-ml">Date: </span><span class="dh-mv" id="pDate">—</span></div>
+        <div><span class="dh-mv" id="pEmail">charter@pexjet.com</span></div>
+        <div><span class="dh-mv" id="pWA">+234 818 213 089</span></div>
+      </div>
+    </div>
+
+    <div class="dsect fd-z">Available Legs:</div>
+    <div class="dtbl-wrap fd-z">
+      <table class="dtbl">
+        <thead><tr><th>Date</th><th>From</th><th>Departure</th><th>Destination</th><th>Arrival</th><th>Pax</th></tr></thead>
+        <tbody id="pLegsBody"><tr><td colspan="6" style="text-align:center;color:#bbb;font-size:11px;padding:14px">No legs added yet</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="d-fare-mid fd-z" id="pFareMidBlock" style="display:none">
+      <div class="d-fare-mid-tag">Discounted Fare</div>
+      <div class="d-fare-mid-val" id="pFareMidVal">—</div>
+      <div class="d-fare-mid-sub">Per sector · subject to availability</div>
+    </div>
+
+    <div class="dtbl-wrap fd-z">
+      <table class="dtbl">
+        <thead><tr><th>Aircraft</th><th>YOM</th><th>Class</th><th>Max Pax</th></tr></thead>
+        <tbody>
+          <tr><td class="tb" id="pAcName">Bombardier Challenger 604</td><td id="pYOM">2008</td><td id="pRange">Long range</td><td class="tg" id="pPaxN">12</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="d-photos fd-z" id="pPhotoBlock">
+      <div class="d-photo">
+        <div class="d-ph-ph" id="extPh"><span class="ic">✈</span>Exterior Photo</div>
+        <img class="d-ph-img" id="pExtImg" src="" alt="Exterior">
+        <div class="d-ph-lbl">Exterior</div>
+      </div>
+      <div class="d-photo">
+        <div class="d-ph-ph" id="cabPh"><span class="ic">🛋</span>Cabin Photo</div>
+        <img class="d-ph-img" id="pCabImg" src="" alt="Cabin">
+        <div class="d-ph-lbl">Cabin</div>
+      </div>
+    </div>
+
+    <div class="d-amen fd-z" id="pAmenBlock"></div>
+
+    <div class="d-foot fd-z">
+      <div class="d-foot-txt">
+        <strong>PexJet · Perspective Executive Jet</strong><br>
+        <span id="pEmailFt">charter@pexjet.com</span> · <span id="pWAFt">+234 818 213 089</span>
+      </div>
+    </div>
+
+    <div class="d-bar fd-z">
+      <img class="d-bar-logo" src="data:image/jpeg;base64,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" alt="PexJet">
+      <div class="d-bar-r">
+        <span class="d-bar-txt">Perspective Executive Jet</span>
+        <div class="d-bar-dot"></div>
+        <span class="d-bar-txt" id="pWebFt">www.pexjet.com</span>
+      </div>
+    </div>
+
+  </div><!-- /flyerDoc -->
+</div><!-- /prevPanel -->
+</div><!-- /grid -->
+</div><!-- /shell -->
+
+<script>
+const AC_DATA = {
+"Bombardier Challenger 604":{folder:"cl604",pax:12,yom:"2008",range:"Long range",amenities:"Wi-Fi, Galley, Lavatory, Club seats, Entertainment"},
+"Hawker 800XP":{folder:"hawker-800xp",pax:8,yom:"2005",range:"Mid range",amenities:"Wi-Fi, Galley, Lavatory, Club seats"},
+"Cessna 208B Caravan":{folder:"cessna-208b",pax:9,yom:"2012",range:"Short range",amenities:"Air conditioning, Cargo door, Bush-capable"},
+"Bombardier Global 6000":{folder:"global-6000",pax:14,yom:"2016",range:"Ultra long range",amenities:"Wi-Fi, Full galley, Stand-up cabin, Flat beds, Shower"},
+"Gulfstream G550":{folder:"g550",pax:14,yom:"2014",range:"Ultra long range",amenities:"Wi-Fi, Full galley, Stand-up cabin, Flat beds, Entertainment"},
+"Embraer Phenom 300":{folder:"phenom-300",pax:6,yom:"2018",range:"Light jet",amenities:"Wi-Fi, Refreshment centre, Lavatory"},
+"Bombardier Challenger 350":{folder:"cl350",pax:9,yom:"2017",range:"Super mid range",amenities:"Wi-Fi, Galley, Lavatory, Club seats, Entertainment"},
+"Dassault Falcon 7X":{folder:"falcon-7x",pax:14,yom:"2015",range:"Ultra long range",amenities:"Wi-Fi, Full galley, Stand-up cabin, Flat beds, Three engines"},
+"Dassault Falcon 900LX":{folder:"falcon-900lx",pax:14,yom:"2016",range:"Ultra long range",amenities:"Wi-Fi, Full galley, Stand-up cabin, Flat beds"},
+"Gulfstream G650":{folder:"g650",pax:16,yom:"2019",range:"Ultra long range",amenities:"Wi-Fi, Full galley, Stand-up cabin, Flat beds, Entertainment"},
+"Bombardier Global 7500":{folder:"global-7500",pax:16,yom:"2020",range:"Ultra long range",amenities:"Wi-Fi, Full galley, Four living spaces, Flat beds, Shower"},
+"Embraer Legacy 600":{folder:"legacy-600",pax:13,yom:"2010",range:"Long range",amenities:"Wi-Fi, Full galley, Stand-up cabin, Lavatory"}
+};
+const AIRPORTS = ["Lagos","Abuja","Port Harcourt","Kano","Enugu","Calabar","Warri (Osubi)","Benin City","Owerri","Asaba","Ibadan","Kaduna","Maiduguri","Akure","Jos","Yola","Sokoto","Ilorin","Uyo","Makurdi","Bauchi","Gombe","Lafia","Katsina","Minna","London (Luton)","London (Stansted)","London (Farnborough)","Dubai","Accra","Johannesburg","Nairobi","Paris (Le Bourget)","Geneva","New York (Teterboro)","Houston","Doha","Amsterdam","Lomé","Cotonou","Dakar","Abidjan"];
+const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MSHT=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+let legs=[],legId=0;
+const opts={photos:true,amen:true,fare:false};
+(function(){document.getElementById("issueDate").value=new Date().toISOString().split("T")[0];addLeg();})();
+function toggleTheme(){const h=document.documentElement,n=h.dataset.theme==="dark"?"light":"dark";h.dataset.theme=n;document.getElementById("thLbl").textContent=n==="dark"?"Dark":"Light";}
+function swTab(p){const isF=p==="form";document.getElementById("formPanel").classList.toggle("panel-hidden",!isF);document.getElementById("prevPanel").classList.toggle("panel-hidden",isF);document.getElementById("tEd").classList.toggle("on",isF);document.getElementById("tPv").classList.toggle("on",!isF);}
+function togOpt(btn,key){opts[key]=!opts[key];btn.classList.toggle("on",opts[key]);if(key==="fare")document.getElementById("fareGrp").style.display=opts.fare?"block":"none";render();}
+function onAcChange(){const v=document.getElementById("aircraft").value,isC=v==="custom";document.getElementById("custAcGrp").style.display=isC?"block":"none";if(!isC&&AC_DATA[v]){const d=AC_DATA[v];document.getElementById("pax").value=d.pax;document.getElementById("yom").value=d.yom;document.getElementById("amenities").value=d.amenities;const rs=document.getElementById("acRange");for(let i=0;i<rs.options.length;i++){if(rs.options[i].text===d.range){rs.selectedIndex=i;break;}}}render();}
+function aopts(sel){return AIRPORTS.map(a=>"<option"+(a===sel?" selected":"")+">"+a+"</option>").join("");}
+function addLeg(){if(legs.length>=5)return;legs.push({id:++legId});buildLegsForm();syncBadge();render();}
+function removeLeg(id){legs=legs.filter(l=>l.id!==id);buildLegsForm();syncBadge();render();}
+function syncBadge(){document.getElementById("legBadge").textContent=legs.length+" leg"+(legs.length!==1?"s":"");document.getElementById("addLegBtn").disabled=legs.length>=5;}
+function buildLegsForm(){document.getElementById("legStack").innerHTML=legs.map((leg,i)=>{const n=String(i+1).padStart(2,"0");return "<div class='lc'><div class='lc-n'>"+n+"</div>"+(legs.length>1?"<button class='rm-btn' onclick='removeLeg("+leg.id+")'>&#10005;</button>":"")+"<div class='r2'><div class='fg'><label>From</label><select id='fr_"+leg.id+"' onchange='render()'><option value=''>Select...</option>"+aopts("Lagos")+"</select></div><div class='fg'><label>To</label><select id='to_"+leg.id+"' onchange='render()'><option value=''>Select...</option>"+aopts("Abuja")+"</select></div></div><div class='r2'><div class='fg'><label>Date</label><input type='date' id='dt_"+leg.id+"' oninput='render()'></div><div class='fg'><label>Day (auto)</label><input type='text' id='dy_"+leg.id+"' readonly placeholder='-- auto --'></div></div><div class='r2'><div class='fg'><label>Departs</label><input type='time' id='tf_"+leg.id+"' value='10:00' oninput='render()'></div><div class='fg'><label>Arrives (est.)</label><input type='time' id='tt_"+leg.id+"' value='13:00' oninput='render()'></div></div></div>";}).join("");}
+function fmt12(t){if(!t)return "—";const[h,m]=t.split(":").map(Number);return String(h%12||12).padStart(2,"0")+":"+String(m).padStart(2,"0")+" "+(h>=12?"PM":"AM");}
+function fmtLong(ds){if(!ds)return "—";const[y,mo,d]=ds.split("-").map(Number);return d+" "+MONTHS[mo-1]+" "+y;}
+function fmtShort(ds){if(!ds)return "TBD";const[y,mo,d]=ds.split("-").map(Number);return d+" "+MSHT[mo-1]+" "+y;}
+function collectLegs(){return legs.map(leg=>{const ds=document.getElementById("dt_"+leg.id)?.value||"";let day="";if(ds){const[y,mo,d]=ds.split("-").map(Number);day=DAYS[new Date(y,mo-1,d).getDay()];const el=document.getElementById("dy_"+leg.id);if(el)el.value=day;}return{from:document.getElementById("fr_"+leg.id)?.value||"",to:document.getElementById("to_"+leg.id)?.value||"",ds,short:fmtShort(ds),day,dep:document.getElementById("tf_"+leg.id)?.value||"",arr:document.getElementById("tt_"+leg.id)?.value||""};});}
+function loadPhotos(folder){const base="images/aircraft/"+folder+"/";const ei=document.getElementById("pExtImg"),ci=document.getElementById("pCabImg");const ep=document.getElementById("extPh"),cp=document.getElementById("cabPh");function tryImg(img,src,ph){img.classList.remove("loaded");ph.style.display="flex";img.onload=function(){img.classList.add("loaded");ph.style.display="none";};img.onerror=function(){img.classList.remove("loaded");ph.style.display="flex";};img.src=src;}tryImg(ei,base+"exterior.jpg",ep);tryImg(ci,base+"cabin.jpg",cp);}
+function render(){const g=id=>(document.getElementById(id)?.value||"").trim();document.getElementById("pDate").textContent=fmtLong(g("issueDate"));document.getElementById("pEmail").textContent=g("ctcEmail");document.getElementById("pWA").textContent=g("ctcWA");document.getElementById("pEmailFt").textContent=g("ctcEmail");document.getElementById("pWAFt").textContent=g("ctcWA");document.getElementById("pWebFt").textContent=g("ctcWeb");const acV=document.getElementById("aircraft").value;const acName=acV==="custom"?(g("custAc")||"Custom Aircraft"):acV;document.getElementById("pAcName").textContent=acName;document.getElementById("pYOM").textContent=g("yom")||"—";document.getElementById("pRange").textContent=document.getElementById("acRange").value;document.getElementById("pPaxN").textContent=g("pax")||"—";const pb=document.getElementById("pPhotoBlock");pb.style.display=opts.photos?"grid":"none";if(opts.photos&&acV!=="custom"&&AC_DATA[acV])loadPhotos(AC_DATA[acV].folder);const ab=document.getElementById("pAmenBlock");ab.style.display=opts.amen?"flex":"none";if(opts.amen){const items=g("amenities").split(",").map(s=>s.trim()).filter(Boolean);ab.innerHTML=items.map(a=>"<div class='d-am'><span class='d-am-chk'>&#10003;</span><span>"+a+"</span></div>").join("");}const fm=document.getElementById("pFareMidBlock");fm.style.display=opts.fare?"block":"none";document.getElementById("pFareMidVal").textContent=g("fareVal")||"—";const ld=collectLegs(),pax=g("pax")||"—";document.getElementById("pLegsBody").innerHTML=ld.length?ld.map(l=>"<tr><td>"+l.short+"</td><td class='tb'>"+(l.from||"—")+"</td><td>"+fmt12(l.dep)+"</td><td class='tb'>"+(l.to||"—")+"</td><td>"+fmt12(l.arr)+"</td><td class='tg'>"+pax+"</td></tr>").join(""):"<tr><td colspan='6' style='text-align:center;color:#bbb;font-size:11px;padding:14px'>No legs added yet</td></tr>";}
+function dlPDF(){setTimeout(()=>window.print(),120);}
+async function dlPNG(){if(typeof html2canvas==="undefined"){alert("PNG export requires an internet connection.");return;}const ov=document.getElementById("ov");ov.classList.add("show");await new Promise(r=>setTimeout(r,160));try{const canvas=await html2canvas(document.getElementById("flyerDoc"),{scale:2.5,useCORS:true,allowTaint:true,backgroundColor:"#ffffff",logging:false});const a=document.createElement("a");a.download="PexJet-EmptyLeg-"+new Date().toISOString().slice(0,10)+".png";a.href=canvas.toDataURL("image/png");a.click();}catch(e){alert("PNG export failed: "+e.message);}finally{ov.classList.remove("show");}}
+function shareWA(){
+  const g=id=>(document.getElementById(id)?.value||"").trim();
+  const ld=collectLegs();
+  const acV=document.getElementById("aircraft").value;
+  const acName=acV==="custom"?(g("custAc")||"Custom Aircraft"):acV;
+  let msg="✈️ *PexJet — Empty Leg Alert*\n";
+  msg+="────────────────────\n\n";
+  msg+="_Confirmed positioning sectors. Fly private at a fraction of charter rates._\n\n";
+  ld.forEach(function(l,i){
+    msg+="*Leg "+(i+1)+": "+(l.from||"—")+" → "+(l.to||"—")+"*\n";
+    if(l.ds) msg+="📅 "+(l.day?l.day+", ":"")+fmtLong(l.ds)+"\n";
+    if(l.dep)msg+="🛫 Departs:  "+fmt12(l.dep)+"\n";
+    if(l.arr)msg+="🛬 Arrives:   "+fmt12(l.arr)+"\n";
+    msg+="\n";
+  });
+  msg+="✈️ *Aircraft:*  "+acName+"\n";
+  msg+="👥 *Capacity:*  Up to "+g("pax")+" passengers\n";
+  if(opts.fare&&g("fareVal"))msg+="💰 *Fare:*  From "+g("fareVal")+"\n";
+  msg+="\n────────────────────\n";
+  msg+="📲 WhatsApp:  "+g("ctcWA")+"\n";
+  msg+="✉️ Email:       "+g("ctcEmail")+"\n";
+  msg+="🌐 "+g("ctcWeb")+"\n\n";
+  msg+="_Seats strictly limited — first confirmed, first flown._";
+  window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
+}
+function resetAll(){if(!confirm("Reset all fields to defaults?"))return;document.getElementById("ctcEmail").value="charter@pexjet.com";document.getElementById("ctcWA").value="+234 818 213 089";document.getElementById("ctcWeb").value="www.pexjet.com";document.getElementById("aircraft").value="Bombardier Challenger 604";document.getElementById("pax").value="12";document.getElementById("yom").value="2008";document.getElementById("amenities").value="Wi-Fi, Galley, Lavatory, Club seats, Entertainment";document.getElementById("fareVal").value="";document.getElementById("custAcGrp").style.display="none";document.getElementById("fareGrp").style.display="none";document.getElementById("issueDate").value=new Date().toISOString().split("T")[0];opts.photos=true;opts.amen=true;opts.fare=false;document.getElementById("togPhotos").classList.add("on");document.getElementById("togAmen").classList.add("on");document.getElementById("togFare").classList.remove("on");legs=[];legId=0;addLeg();}
+</script>
+</body>
+</html>
